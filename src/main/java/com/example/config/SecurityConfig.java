@@ -11,6 +11,7 @@ import org.springframework.security.core.userdetails.UserDetailsService;
 import org.springframework.security.crypto.password.NoOpPasswordEncoder;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.security.provisioning.InMemoryUserDetailsManager;
+import org.springframework.security.web.util.matcher.AntPathRequestMatcher;
 
 /**
  * @author Jasper Wu
@@ -44,6 +45,21 @@ public class SecurityConfig extends WebSecurityConfigurerAdapter {
                 .and()
                 .formLogin()
                 .loginPage("/login.html")
+                .loginProcessingUrl("/doLogin")
+                .usernameParameter("name")
+                .passwordParameter("psd")
+                .defaultSuccessUrl("/index")
+                .successForwardUrl("/index")
+                .failureForwardUrl("/f2")
+                .failureUrl("/f1")
+                .permitAll()
+                .and()
+                .logout()
+                .logoutRequestMatcher(new AntPathRequestMatcher("/logout", "POST"))
+                .logoutSuccessUrl("/index")
+                .deleteCookies()
+                .clearAuthentication(true)
+                .invalidateHttpSession(true)
                 .permitAll()
                 .and()
                 .csrf().disable();
