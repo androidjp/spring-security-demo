@@ -34,12 +34,21 @@ public class SecurityConfig extends WebSecurityConfigurerAdapter {
         return NoOpPasswordEncoder.getInstance();
     }
 
+//    @Override
+//    protected void configure(AuthenticationManagerBuilder auth) throws Exception {
+//        auth.inMemoryAuthentication()
+//                .withUser("jasper")
+//                .password("123")
+//                .roles("admin");
+//    }
+
+    @Bean
     @Override
-    protected void configure(AuthenticationManagerBuilder auth) throws Exception {
-        auth.inMemoryAuthentication()
-                .withUser("jasper")
-                .password("123")
-                .roles("admin");
+    protected UserDetailsService userDetailsService() {
+        InMemoryUserDetailsManager manager = new InMemoryUserDetailsManager();
+        manager.createUser(User.withUsername("admin").password("admin").roles("admin").build());
+        manager.createUser(User.withUsername("jasper").password("123").roles("user").build());
+        return manager;
     }
 
     @Override
