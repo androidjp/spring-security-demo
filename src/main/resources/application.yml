@@ -7,3 +7,12 @@ spring:
     username: root
     password: root
     url: jdbc:mysql:///demo?useUnicode=true&characterEncoding=UTF-8&serverTimezone=Asia/Shanghai
+  jpa:
+    database: mysql
+    database-platform: mysql
+    hibernate:
+      ddl-auto: update
+    show-sql: true
+    properties:
+      hibernate:
+        dialect: org.hibernate.dialect.MySQL8Dialect

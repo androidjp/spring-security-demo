@@ -1,10 +1,12 @@
 package com.example.config;
 
+import com.example.service.UserService;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.security.access.hierarchicalroles.RoleHierarchy;
 import org.springframework.security.access.hierarchicalroles.RoleHierarchyImpl;
+import org.springframework.security.config.annotation.authentication.builders.AuthenticationManagerBuilder;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.annotation.web.builders.WebSecurity;
 import org.springframework.security.config.annotation.web.configuration.WebSecurityConfigurerAdapter;
@@ -38,17 +40,11 @@ public class SecurityConfig extends WebSecurityConfigurerAdapter {
     }
 
     @Resource
-    DataSource dataSource;
+    private UserService userService;
 
-    @Bean
     @Override
-    protected UserDetailsService userDetailsService() {
-        JdbcUserDetailsManager manager = new JdbcUserDetailsManager();
-        manager.setDataSource(dataSource);
-        if (!manager.userExists("jasper")) {
-            manager.createUser(User.withUsername("jasper").password("123").roles("admin").build());
-        }
-        return manager;
+    protected void configure(AuthenticationManagerBuilder auth) throws Exception {
+        auth.userDetailsService(userService);
     }
 
     @Override
