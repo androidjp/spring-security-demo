@@ -5,23 +5,17 @@ import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.security.access.hierarchicalroles.RoleHierarchy;
 import org.springframework.security.access.hierarchicalroles.RoleHierarchyImpl;
-import org.springframework.security.config.annotation.authentication.builders.AuthenticationManagerBuilder;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.annotation.web.builders.WebSecurity;
 import org.springframework.security.config.annotation.web.configuration.WebSecurityConfigurerAdapter;
-import org.springframework.security.core.AuthenticationException;
 import org.springframework.security.core.userdetails.User;
 import org.springframework.security.core.userdetails.UserDetailsService;
 import org.springframework.security.crypto.password.NoOpPasswordEncoder;
 import org.springframework.security.crypto.password.PasswordEncoder;
-import org.springframework.security.provisioning.InMemoryUserDetailsManager;
-import org.springframework.security.web.AuthenticationEntryPoint;
-import org.springframework.security.web.util.matcher.AntPathRequestMatcher;
+import org.springframework.security.provisioning.JdbcUserDetailsManager;
 
-import javax.servlet.ServletException;
-import javax.servlet.http.HttpServletRequest;
-import javax.servlet.http.HttpServletResponse;
-import java.io.IOException;
+import javax.annotation.Resource;
+import javax.sql.DataSource;
 import java.io.PrintWriter;
 
 /**
@@ -36,14 +30,6 @@ public class SecurityConfig extends WebSecurityConfigurerAdapter {
         return NoOpPasswordEncoder.getInstance();
     }
 
-//    @Override
-//    protected void configure(AuthenticationManagerBuilder auth) throws Exception {
-//        auth.inMemoryAuthentication()
-//                .withUser("jasper")
-//                .password("123")
-//                .roles("admin");
-//    }
-
     @Bean
     RoleHierarchy roleHierarchy() {
         RoleHierarchyImpl roleHierarchy = new RoleHierarchyImpl();
@@ -51,12 +37,17 @@ public class SecurityConfig extends WebSecurityConfigurerAdapter {
         return roleHierarchy;
     }
 
+    @Resource
+    DataSource dataSource;
+
     @Bean
     @Override
     protected UserDetailsService userDetailsService() {
-        InMemoryUserDetailsManager manager = new InMemoryUserDetailsManager();
-        manager.createUser(User.withUsername("admin").password("admin").roles("admin").build());
-        manager.createUser(User.withUsername("jasper").password("123").roles("user").build());
+        JdbcUserDetailsManager manager = new JdbcUserDetailsManager();
+        manager.setDataSource(dataSource);
+        if (!manager.userExists("jasper")) {
+            manager.createUser(User.withUsername("jasper").password("123").roles("admin").build());
+        }
         return manager;
     }
 
