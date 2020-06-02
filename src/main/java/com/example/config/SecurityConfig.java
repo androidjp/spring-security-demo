@@ -1,24 +1,27 @@
 package com.example.config;
 
-import com.example.service.UserService;
+import com.example.model.RespBean;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.google.code.kaptcha.Producer;
+import com.google.code.kaptcha.impl.DefaultKaptcha;
+import com.google.code.kaptcha.util.Config;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
-import org.springframework.security.access.hierarchicalroles.RoleHierarchy;
-import org.springframework.security.access.hierarchicalroles.RoleHierarchyImpl;
-import org.springframework.security.config.annotation.authentication.builders.AuthenticationManagerBuilder;
+import org.springframework.security.authentication.AuthenticationManager;
+import org.springframework.security.authentication.AuthenticationProvider;
+import org.springframework.security.authentication.ProviderManager;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
-import org.springframework.security.config.annotation.web.builders.WebSecurity;
 import org.springframework.security.config.annotation.web.configuration.WebSecurityConfigurerAdapter;
 import org.springframework.security.core.userdetails.User;
 import org.springframework.security.core.userdetails.UserDetailsService;
 import org.springframework.security.crypto.password.NoOpPasswordEncoder;
 import org.springframework.security.crypto.password.PasswordEncoder;
-import org.springframework.security.provisioning.JdbcUserDetailsManager;
+import org.springframework.security.provisioning.InMemoryUserDetailsManager;
 
-import javax.annotation.Resource;
-import javax.sql.DataSource;
 import java.io.PrintWriter;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Properties;
 
 /**
  * @author Jasper Wu
@@ -32,73 +35,75 @@ public class SecurityConfig extends WebSecurityConfigurerAdapter {
         return NoOpPasswordEncoder.getInstance();
     }
 
+    // 要创建Bean
     @Bean
-    RoleHierarchy roleHierarchy() {
-        RoleHierarchyImpl roleHierarchy = new RoleHierarchyImpl();
-        roleHierarchy.setHierarchy("ROLE_admin > ROLE_user"); // 角色继承
-        return roleHierarchy;
+    MyAuthenticationProvider myAuthenticationProvider() {
+        MyAuthenticationProvider myAuthenticationProvider = new MyAuthenticationProvider();
+        myAuthenticationProvider.setPasswordEncoder(passwordEncoder());
+        myAuthenticationProvider.setUserDetailsService(userDetailsService());
+        return myAuthenticationProvider;
     }
 
-    @Resource
-    private UserService userService;
-
+    // 还要创建一个 AuthenticationManager 来 加载这个 自定义的 AuthenticationProvider
+    @Bean
     @Override
-    protected void configure(AuthenticationManagerBuilder auth) throws Exception {
-        auth.userDetailsService(userService);
+    public AuthenticationManager authenticationManagerBean() throws Exception {
+        List<AuthenticationProvider> list = new ArrayList<>();
+        list.add(myAuthenticationProvider());
+        return new ProviderManager(list);
     }
 
+    @Bean
     @Override
-    public void configure(WebSecurity web) throws Exception {
-        web.ignoring().antMatchers("/js/**", "/css/**", "/images/**");
+    protected UserDetailsService userDetailsService() {
+        InMemoryUserDetailsManager manager = new InMemoryUserDetailsManager();
+        manager.createUser(User.withUsername("jasper").password("123").roles("admin").build());
+        return manager;
     }
 
     @Override
     protected void configure(HttpSecurity http) throws Exception {
+        // 简单设置各种回调
         http.authorizeRequests()
-                .antMatchers("/admin/**").hasRole("admin") // 只有 admin 角色可以访问
-                .antMatchers("/user/**").hasRole("user") // admin, user 角色都可以访问
+                .antMatchers("/vc.jpg").permitAll()
                 .anyRequest().authenticated()
                 .and()
                 .formLogin()
-                .loginPage("/login.html")
-                .loginProcessingUrl("/doLogin")
-                .usernameParameter("name")
-                .passwordParameter("psd")
-                .successHandler((req, resp, authentication) -> {
-                    Object principal = authentication.getPrincipal();
+                .successHandler((req, resp, auth) -> {
                     resp.setContentType("application/json;charset=utf-8");
-                    PrintWriter out = resp.getWriter();
-                    out.write(new ObjectMapper().writeValueAsString(principal));
-                    out.flush();
-                    out.close();
+                    PrintWriter writer = resp.getWriter();
+                    writer.write(new ObjectMapper().writeValueAsString(RespBean.ok("success", auth.getPrincipal())));
+                    writer.flush();
+                    writer.close();
                 })
                 .failureHandler((req, resp, e) -> {
                     resp.setContentType("application/json;charset=utf-8");
-                    PrintWriter out = resp.getWriter();
-                    out.write(e.getMessage());
-                    out.flush();
-                    out.close();
+                    PrintWriter writer = resp.getWriter();
+                    writer.write(new ObjectMapper().writeValueAsString(RespBean.error(e.getMessage())));
+                    writer.flush();
+                    writer.close();
                 })
                 .permitAll()
                 .and()
-                .logout()
-                .logoutUrl("/logout")
-                .logoutSuccessHandler((req, resp, authentication) -> {
-                    resp.setContentType("application/json;charset=utf-8");
-                    PrintWriter out = resp.getWriter();
-                    out.write("注销成功");
-                    out.flush();
-                    out.close();
-                })
-                .permitAll()
-                .and()
-                .csrf().disable().exceptionHandling()
-                .authenticationEntryPoint((req, resp, e) -> {
-                    resp.setContentType("application/json;charset=utf-8");
-                    PrintWriter out = resp.getWriter();
-                    out.write("尚未登录，请先登录");
-                    out.flush();
-                    out.close();
-                });
+                .csrf().disable();
+    }
+
+
+    /**
+     * 提供一个实体类用来描述验证码的基本信息
+     * 提供了验证码图片的宽高、字符库以及生成的验证码字符长度。
+     * @return
+     */
+    @Bean
+    Producer verifyCode() {
+        Properties properties = new Properties();
+        properties.setProperty("kaptcha.image.width", "150");
+        properties.setProperty("kaptcha.image.height", "50");
+        properties.setProperty("kaptcha.textproducer.char.string", "0123456789");
+        properties.setProperty("kaptcha.textproducer.char.length", "4");
+        Config config = new Config(properties);
+        DefaultKaptcha defaultKaptcha = new DefaultKaptcha();
+        defaultKaptcha.setConfig(config);
+        return defaultKaptcha;
     }
 }
