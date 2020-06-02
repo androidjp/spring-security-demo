@@ -44,6 +44,8 @@ public class SecurityConfig extends WebSecurityConfigurerAdapter {
     @Override
     protected void configure(HttpSecurity http) throws Exception {
         http.authorizeRequests()
+                .antMatchers("/remember").rememberMe()
+                .antMatchers("/admin").fullyAuthenticated()
                 .anyRequest().authenticated()
                 .and()
                 .formLogin()
