@@ -18,6 +18,7 @@ import org.springframework.security.crypto.password.NoOpPasswordEncoder;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.security.provisioning.InMemoryUserDetailsManager;
 
+import javax.annotation.Resource;
 import java.io.PrintWriter;
 import java.util.ArrayList;
 import java.util.List;
@@ -35,23 +36,8 @@ public class SecurityConfig extends WebSecurityConfigurerAdapter {
         return NoOpPasswordEncoder.getInstance();
     }
 
-    // 要创建Bean
-    @Bean
-    MyAuthenticationProvider myAuthenticationProvider() {
-        MyAuthenticationProvider myAuthenticationProvider = new MyAuthenticationProvider();
-        myAuthenticationProvider.setPasswordEncoder(passwordEncoder());
-        myAuthenticationProvider.setUserDetailsService(userDetailsService());
-        return myAuthenticationProvider;
-    }
-
-    // 还要创建一个 AuthenticationManager 来 加载这个 自定义的 AuthenticationProvider
-    @Bean
-    @Override
-    public AuthenticationManager authenticationManagerBean() throws Exception {
-        List<AuthenticationProvider> list = new ArrayList<>();
-        list.add(myAuthenticationProvider());
-        return new ProviderManager(list);
-    }
+    @Resource
+    MyWebAuthenticationDetailsSource myWebAuthenticationDetailsSource;
 
     @Bean
     @Override
@@ -69,6 +55,7 @@ public class SecurityConfig extends WebSecurityConfigurerAdapter {
                 .anyRequest().authenticated()
                 .and()
                 .formLogin()
+                .authenticationDetailsSource(myWebAuthenticationDetailsSource)
                 .successHandler((req, resp, auth) -> {
                     resp.setContentType("application/json;charset=utf-8");
                     PrintWriter writer = resp.getWriter();
