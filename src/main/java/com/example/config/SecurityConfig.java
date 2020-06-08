@@ -1,5 +1,6 @@
 package com.example.config;
 
+import com.example.service.UserService;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
@@ -11,6 +12,7 @@ import org.springframework.security.crypto.password.NoOpPasswordEncoder;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.security.web.session.HttpSessionEventPublisher;
 
+import javax.annotation.Resource;
 import java.io.PrintWriter;
 
 /**
@@ -19,6 +21,8 @@ import java.io.PrintWriter;
  **/
 @Configuration
 public class SecurityConfig extends WebSecurityConfigurerAdapter {
+    @Resource
+    UserService userService;
 
     @Bean
     public PasswordEncoder passwordEncoder() {
@@ -27,8 +31,7 @@ public class SecurityConfig extends WebSecurityConfigurerAdapter {
 
     @Override
     protected void configure(AuthenticationManagerBuilder auth) throws Exception {
-        auth.inMemoryAuthentication()
-                .withUser("jasper").password("123").roles("admin");
+        auth.userDetailsService(userService);
     }
 
     @Override
@@ -84,8 +87,7 @@ public class SecurityConfig extends WebSecurityConfigurerAdapter {
                 })
                 .and()
                 .sessionManagement()
-                .maximumSessions(1) // 最大维护 session 数 为 1
-                .maxSessionsPreventsLogin(true); // 禁止新的登录
+                .maximumSessions(1); // 最大维护 session 数 为 1
     }
 
     @Bean
