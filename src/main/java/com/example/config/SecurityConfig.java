@@ -1,23 +1,16 @@
 package com.example.config;
 
-import com.example.service.UserService;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
-import org.springframework.security.access.hierarchicalroles.RoleHierarchy;
-import org.springframework.security.access.hierarchicalroles.RoleHierarchyImpl;
 import org.springframework.security.config.annotation.authentication.builders.AuthenticationManagerBuilder;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.annotation.web.builders.WebSecurity;
 import org.springframework.security.config.annotation.web.configuration.WebSecurityConfigurerAdapter;
-import org.springframework.security.core.userdetails.User;
-import org.springframework.security.core.userdetails.UserDetailsService;
 import org.springframework.security.crypto.password.NoOpPasswordEncoder;
 import org.springframework.security.crypto.password.PasswordEncoder;
-import org.springframework.security.provisioning.JdbcUserDetailsManager;
+import org.springframework.security.web.session.HttpSessionEventPublisher;
 
-import javax.annotation.Resource;
-import javax.sql.DataSource;
 import java.io.PrintWriter;
 
 /**
@@ -32,19 +25,10 @@ public class SecurityConfig extends WebSecurityConfigurerAdapter {
         return NoOpPasswordEncoder.getInstance();
     }
 
-    @Bean
-    RoleHierarchy roleHierarchy() {
-        RoleHierarchyImpl roleHierarchy = new RoleHierarchyImpl();
-        roleHierarchy.setHierarchy("ROLE_admin > ROLE_user"); // 角色继承
-        return roleHierarchy;
-    }
-
-    @Resource
-    private UserService userService;
-
     @Override
     protected void configure(AuthenticationManagerBuilder auth) throws Exception {
-        auth.userDetailsService(userService);
+        auth.inMemoryAuthentication()
+                .withUser("jasper").password("123").roles("admin");
     }
 
     @Override
@@ -55,8 +39,6 @@ public class SecurityConfig extends WebSecurityConfigurerAdapter {
     @Override
     protected void configure(HttpSecurity http) throws Exception {
         http.authorizeRequests()
-                .antMatchers("/admin/**").hasRole("admin") // 只有 admin 角色可以访问
-                .antMatchers("/user/**").hasRole("user") // admin, user 角色都可以访问
                 .anyRequest().authenticated()
                 .and()
                 .formLogin()
@@ -99,6 +81,15 @@ public class SecurityConfig extends WebSecurityConfigurerAdapter {
                     out.write("尚未登录，请先登录");
                     out.flush();
                     out.close();
-                });
+                })
+                .and()
+                .sessionManagement()
+                .maximumSessions(1) // 最大维护 session 数 为 1
+                .maxSessionsPreventsLogin(true); // 禁止新的登录
+    }
+
+    @Bean
+    HttpSessionEventPublisher httpSessionEventPublisher() {
+        return new HttpSessionEventPublisher();
     }
 }
