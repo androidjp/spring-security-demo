@@ -4,9 +4,9 @@ spring:
       name: root
       password: root
   datasource:
-    username: root
-    password: root
-    url: jdbc:mysql:///demo?useUnicode=true&characterEncoding=UTF-8&serverTimezone=Asia/Shanghai
+    username: jasper
+    password: Password1!
+    url: jdbc:mysql://192.168.204.128:3306/demo?useUnicode=true&characterEncoding=UTF-8&serverTimezone=Asia/Shanghai
   jpa:
     database: mysql
     database-platform: mysql
