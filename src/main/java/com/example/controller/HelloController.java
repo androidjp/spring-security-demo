@@ -1,9 +1,6 @@
 package com.example.controller;
 
-import org.springframework.web.bind.annotation.GetMapping;
-import org.springframework.web.bind.annotation.PostMapping;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.bind.annotation.*;
 
 /**
  * @author Jasper Wu
@@ -15,6 +12,15 @@ public class HelloController {
     @GetMapping("hello")
     public String hello() {
         return "hello";
+    }
+
+    // @MatrixVariable 是 Spring 3.2 开始有个一个新的传参方式，使得参数之间啊可以用 ; 隔开
+    // 但这种方式恰恰就是 Spring Security 禁止的，所以，要用，就要让 Spring Security 放行
+    // call 法： http://localhost:8080/hello2/123;name=jaap
+    @RequestMapping(value = "/hello2/{id}")
+    public void hello2(@PathVariable Integer id, @MatrixVariable String name) {
+        System.out.println("id = " + id);
+        System.out.println("name = " + name);
     }
 
     @PostMapping("/index")
